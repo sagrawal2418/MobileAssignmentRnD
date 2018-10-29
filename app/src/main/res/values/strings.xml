@@ -1,0 +1,7 @@
+<resources>
+    <string name="app_name">MobileAssignmentRnD</string>
+    <string name="search">Search</string>
+    <string name="appbar_scrolling_view_behavior" translatable="false">android.support.design.widget.AppBarLayout$ScrollingViewBehavior</string>
+
+
+</resources>
