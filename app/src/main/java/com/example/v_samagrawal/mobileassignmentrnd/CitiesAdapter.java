@@ -13,9 +13,11 @@ import java.util.List;
 
 
 public class CitiesAdapter extends RecyclerView.Adapter<CitiesAdapter.MyViewHolder> implements Filterable {
+    private final String TAG = CitiesAdapter.class.getSimpleName();
+
     private List<City> filteredCities;
     private List<City> cities;
-    private CitySelectionListener citySelectionListener;
+    private CitySelectionListener listener;
 
     public static class MyViewHolder extends RecyclerView.ViewHolder {
         private TextView cityCountryTv;
@@ -26,14 +28,11 @@ public class CitiesAdapter extends RecyclerView.Adapter<CitiesAdapter.MyViewHold
         }
     }
 
-    public CitiesAdapter(CitySelectionListener citySelectionListener) {
-        this.citySelectionListener = citySelectionListener;
-    }
-
-    public void setCities(List<City> cities) {
+    public CitiesAdapter(List<City> cities, CitySelectionListener listener) {
         this.cities = cities;
         this.filteredCities = cities;
-        notifyDataSetChanged();
+
+        this.listener = listener;
     }
 
     @Override
@@ -52,8 +51,8 @@ public class CitiesAdapter extends RecyclerView.Adapter<CitiesAdapter.MyViewHold
         holder.cityCountryTv.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                if (citySelectionListener != null) {
-                    citySelectionListener.onCitySelected(city);
+                if (listener != null) {
+                    listener.onCitySelected(city);
                 }
             }
         });
@@ -64,20 +63,7 @@ public class CitiesAdapter extends RecyclerView.Adapter<CitiesAdapter.MyViewHold
         return new Filter() {
             @Override
             protected FilterResults performFiltering(CharSequence charSequence) {
-                String charString = charSequence.toString();
-                if (charString.isEmpty()) {
-                    filteredCities = cities;
-                } else {
-                    List<City> filteredList = new ArrayList<>();
-                    for (City row : cities) {
-
-                        if (row.getName().toLowerCase().startsWith(charString.toLowerCase())) {
-                            filteredList.add(row);
-                        }
-                    }
-
-                    filteredCities = filteredList;
-                }
+                filteredCities = filterCities(cities, charSequence);
 
                 FilterResults filterResults = new FilterResults();
                 filterResults.values = filteredCities;
@@ -91,6 +77,30 @@ public class CitiesAdapter extends RecyclerView.Adapter<CitiesAdapter.MyViewHold
                 notifyDataSetChanged();
             }
         };
+    }
+
+    public List<City> filterCities(List<City> cities, CharSequence charSequence) {
+        String charString = charSequence.toString();
+        if (charString.isEmpty()) {
+            //Log.d(TAG, "filtering not required, populating original list.");
+            return cities;
+        } else {
+            long start = System.currentTimeMillis();
+            //Log.d(TAG, "filtering started at " + start);
+            boolean finding = false;
+            List<City> filteredList = new ArrayList<>();
+            for (City row : cities) {
+                if (row.getName().toLowerCase().startsWith(charString.toLowerCase())) {
+                    filteredList.add(row);
+                    finding = true;
+                } else if (finding) {
+                    //Log.d(TAG, "filtering stopped as found all items after " + (System.currentTimeMillis() - start) + " millis");
+                    break;
+                }
+            }
+            //Log.d(TAG, "filtering tok " + (System.currentTimeMillis() - start) + " millis");
+            return filteredList;
+        }
     }
 
     @Override

@@ -4,12 +4,14 @@ package com.example.v_samagrawal.mobileassignmentrnd;
 import android.app.SearchManager;
 import android.content.Context;
 import android.os.Bundle;
+import android.os.Handler;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.SearchView;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuInflater;
@@ -24,20 +26,22 @@ import java.util.List;
  * A simple {@link Fragment} subclass.
  */
 public class MainListFragment extends Fragment {
+    private final String TAG = MainListFragment.class.getSimpleName();
+
+    private SearchView searchView;
 
     private CitiesAdapter citiesAdapter;
     private CitiesAdapter.CitySelectionListener citySelectionListener;
-    private SearchView searchView;
+    private List<City> cities;
 
-    public static MainListFragment newInstance(List<City> citiesList, CitiesAdapter.CitySelectionListener citySelectionListener) {
+    private Handler handler = new Handler();
+
+    public static MainListFragment newInstance(List<City> cities, CitiesAdapter.CitySelectionListener citySelectionListener) {
         MainListFragment fragment = new MainListFragment();
-        fragment.citiesList = citiesList;
+        fragment.cities = cities;
         fragment.citySelectionListener = citySelectionListener;
         return fragment;
     }
-
-    private List<City> citiesList;
-
 
     public MainListFragment() {
         // Required empty public constructor
@@ -67,14 +71,14 @@ public class MainListFragment extends Fragment {
             @Override
             public boolean onQueryTextSubmit(String query) {
                 // filter recycler view when query submitted
-                citiesAdapter.getFilter().filter(query);
+                submitDelayedQuery(query);
                 return false;
             }
 
             @Override
             public boolean onQueryTextChange(String query) {
                 // filter recycler view when text is changed
-                citiesAdapter.getFilter().filter(query);
+                submitDelayedQuery(query);
                 return false;
             }
         });
@@ -108,11 +112,25 @@ public class MainListFragment extends Fragment {
         RecyclerView recyclerView = view.findViewById(R.id.recyclerView);
         recyclerView.setLayoutManager(new LinearLayoutManager(getContext()));
 
-        citiesAdapter = new CitiesAdapter(citySelectionListener);
+        citiesAdapter = new CitiesAdapter(cities, citySelectionListener);
         recyclerView.setAdapter(citiesAdapter);
-        citiesAdapter.setCities(citiesList);
     }
 
+    private void submitDelayedQuery(final String query) {
+        Log.d(TAG, "received query=" + query);
+        handler.removeCallbacksAndMessages(null);
+        /*
+        Execute delayed so previous query gets completed.
+        Our tests show that filtering 200k records taking around 350 ms on higher end devices
+         */
+        handler.postDelayed(new Runnable() {
+            @Override
+            public void run() {
+                citiesAdapter.getFilter().filter(query);
+                Log.d(TAG, "executed query=" + query);
+            }
+        }, 400);
+    }
 
     public boolean onBackPressed() {
         // close search view on back button pressed
